@@ -1,13 +1,15 @@
-class Field {
+class Field extends Phaser.GameObjects.Container{
 	#num_of_mines;
 	#rows = 16;
 	#cols = 16;
 	blocks = [];
 
-	constructor(num_of_mines){
+	constructor(scene, num_of_mines){
+		super(scene);
 		this.#diff_level(num_of_mines);
-		this.#init_field();
+		this.#init_field(scene);
 		this.#init_mines();
+		this.#add_to_scene();
 	}
 
 	get_num_of_mines(){
@@ -30,11 +32,14 @@ class Field {
 		}
 	}
 
-	#init_field(){
+	#init_field(scene){
 		for(let i = 0; i < this.#rows; i++){
 			let row = [];
 			for(let j = 0; j < this.#cols; j++){
-				row[j] = new Block();
+				let size = Math.floor(game.canvas.width/this.#rows);
+				let x = (i * size);
+				let y = (j * size);
+				row[j] = new Block(scene, x, y, size, "block");
 			}
 			this.blocks[i] = row;
 		}
@@ -46,7 +51,8 @@ class Field {
 			let unseriealized_pos = mine_pos[i];
 			let row = Math.floor(unseriealized_pos/this.#rows);
 			let col = unseriealized_pos%this.#cols;
-			this.blocks[row][col] = new Mine_Block();
+			let curr = this.blocks[row][col];
+			this.blocks[row][col] = new Mine_Block(curr, "bomb");
 			this.#inc_mine_counts(row, col);
 		}
 	}
@@ -74,11 +80,20 @@ class Field {
 		return arr;
 	}
 
+	#add_to_scene(){
+		for(let i = 0; i < this.#rows; i++){
+			for(let j = 0; j < this.#cols; j++){
+				this.blocks[i][j].add();
+				this.blocks[i][j].add_count_text();
+			}
+		}
+	}
+
 	debug_print_blocks(){
 		var result = "\n";
 		for(let i = 0; i < this.#rows; i++){
 			for(let j = 0; j < this.#cols; j++){
-				let element = this.blocks[i][j];
+				let element = this.blocks[j][i]; // somewhere the displayed tiles get flipped diag
 				result += element.get_mine_count();
 				result += ", ";
 			}
