@@ -1,5 +1,5 @@
 class Field extends Phaser.GameObjects.Container{
-	#num_of_mines;
+	#num_of_mines = 0;
 	#rows = 16;
 	#cols = 16;
 	blocks = [];
@@ -83,8 +83,17 @@ class Field extends Phaser.GameObjects.Container{
 	#add_to_scene(){
 		for(let i = 0; i < this.#rows; i++){
 			for(let j = 0; j < this.#cols; j++){
-				this.blocks[i][j].add();
+				this.blocks[i][j].add_blocks();
 				this.blocks[i][j].add_count_text();
+				this.blocks[i][j].add_cover();
+			}
+		}
+	}
+
+	game_over(){
+		for(let i = 0; i < this.#rows; i++){
+			for(let j = 0; j < this.#cols; j++){
+				this.blocks[i][j].delete_cover();
 			}
 		}
 	}
