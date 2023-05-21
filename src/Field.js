@@ -113,8 +113,10 @@ class Field extends Phaser.GameObjects.Container{
 		if(this.container.#on_down_pointee !== this.pointee) return;
 		this.container.#on_down_pointee = undefined;
 		if(pointer.upTime-pointer.downTime > 400){
-			this.pointee.toggle_flag_visibility(this.container.#mine_counter > -1); //!!!!!
-			this.container.#update_mine_counter(this.pointee.get_flag_visibility());
+			let isToggle = this.pointee.toggle_flag_visibility(this.container.#mine_counter.text > 0);
+			if(isToggle){
+				this.container.#update_mine_counter(this.pointee.get_flag_visibility());
+			}
 		}
 		else{
 			if(this.pointee.get_flag_visibility() === false){

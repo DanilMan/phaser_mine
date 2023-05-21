@@ -52,7 +52,11 @@ class Block extends Phaser.GameObjects.TileSprite{
 		return this._flag.visible;
 	}
 
-	toggle_flag_visibility(isToggle){
-		this._flag.setVisible(!this._flag.visible || isToggle); // not working properly. Might have to make the check more complex.
+	toggle_flag_visibility(hasFlags){
+		var isToggle = this._flag.visible || hasFlags;
+		if(isToggle){
+			this._flag.setVisible(!this._flag.visible);
+		}
+		return isToggle;
 	}
 }
