@@ -7,11 +7,16 @@ class Mine_Field extends Phaser.Scene {
 
 	preload(){
 		this.load.image("block", "assets/imgs/block.png");
-		this.load.image("bomb", "assets/imgs/bomb1.png");
+		this.load.image("cover", "assets/imgs/cover.png");
+		this.load.image("flag", "assets/imgs/flag.png");
+		this.load.image("bomb", "assets/imgs/bomb.png");
 	}
 
 	create(){
-		this.scene_field = new Field(this, 1);
+		var mine_counter = this.add.text(game.canvas.width/2, game.canvas.height-25, 0);
+		mine_counter.setOrigin(0.5,0.5);
+		mine_counter.setFontSize(50);
+		var scene_field = new Field(this, 1, mine_counter);
 		//this.scene_field.debug_print_blocks();
 	}
 }

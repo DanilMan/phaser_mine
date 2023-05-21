@@ -1,12 +1,15 @@
 class Field extends Phaser.GameObjects.Container{
 	#num_of_mines = 0;
+	#mine_counter = 0;
 	#rows = 16;
 	#cols = 16;
+	#on_down_pointee;
 	blocks = [];
 
-	constructor(scene, num_of_mines){
+	constructor(scene, num_of_mines, mine_counter){
 		super(scene);
 		this.#diff_level(num_of_mines);
+		this.#init_mine_counter(mine_counter);
 		this.#init_field(scene);
 		this.#init_mines();
 		this.#add_to_scene();
@@ -19,17 +22,22 @@ class Field extends Phaser.GameObjects.Container{
 	#diff_level(num_of_mines){
 		switch(num_of_mines){
 			case 0:
-				this.#num_of_mines = 15;
+				this.#num_of_mines = this.#rows;
 				break;
 			case 1:
-				this.#num_of_mines = 30;
+				this.#num_of_mines = this.#rows*2;
 				break;
 			case 2:
-				this.#num_of_mines = 50;
+				this.#num_of_mines = this.#rows*3;
 				break;
 			default:
-				this.#num_of_mines = 30;
+				this.#num_of_mines = this.#rows*2;
 		}
+	}
+
+	#init_mine_counter(mine_counter){
+		this.#mine_counter = mine_counter;
+		this.#mine_counter.setText(this.#num_of_mines);
 	}
 
 	#init_field(scene){
@@ -83,14 +91,60 @@ class Field extends Phaser.GameObjects.Container{
 	#add_to_scene(){
 		for(let i = 0; i < this.#rows; i++){
 			for(let j = 0; j < this.#cols; j++){
-				this.blocks[i][j].add_blocks();
-				this.blocks[i][j].add_count_text();
-				this.blocks[i][j].add_cover();
+				let block = this.blocks[i][j];
+				block.add_blocks();
+				block.add_count_text();
+				block.add_cover();
+				block.add_flag();
+				block.setInteractive();
+				block.on('pointerdown', this.#on_pointer_down, {container: this, pointee: block});
+				block.on('pointerup', this.#on_pointer_up, {container: this, pointee: block});
 			}
 		}
 	}
 
-	game_over(){
+	#on_pointer_down(){
+		if(this.pointee.get_cover().scene === undefined) return;
+		this.container.#on_down_pointee = this.pointee;
+	}
+
+	#on_pointer_up(pointer){
+		if(this.pointee.get_cover().scene === undefined) return;
+		if(this.container.#on_down_pointee !== this.pointee) return;
+		this.container.#on_down_pointee = undefined;
+		if(pointer.upTime-pointer.downTime > 400){
+			this.pointee.toggle_flag_visibility(this.container.#mine_counter > -1); //!!!!!
+			this.container.#update_mine_counter(this.pointee.get_flag_visibility());
+		}
+		else{
+			if(this.pointee.get_flag_visibility() === false){
+				this.container.#delete_covers(this.pointee);
+			}
+		}
+	}
+
+	#update_mine_counter(is_visible){
+		if(is_visible){
+			this.#mine_counter.text--;
+		}
+		else{
+			this.#mine_counter.text++;
+		}
+	}
+
+	#delete_covers(pointee){
+		if(pointee.get_mine_count() === "_"){
+			this.#game_over();
+		}
+		else if(pointee.get_mine_count() === 0){ // use DFS algorithm to un_cover multiple blocks
+			pointee.delete_cover(); // make sure the algorithm checks for visible flags as well
+		}
+		else{
+			pointee.delete_cover();
+		}
+	}
+
+	#game_over(){
 		for(let i = 0; i < this.#rows; i++){
 			for(let j = 0; j < this.#cols; j++){
 				this.blocks[i][j].delete_cover();

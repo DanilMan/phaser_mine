@@ -1,6 +1,7 @@
 class Block extends Phaser.GameObjects.TileSprite{
 	#mine_count = 0;
 	#size = 0;
+	_flag;
 	_cover;
 
 	constructor(scene, x, y, size, img){
@@ -18,28 +19,21 @@ class Block extends Phaser.GameObjects.TileSprite{
 		text.setFontSize(this.#size);
 		text.setColor("black");
 	}
-	// use up and down to check time between up and down for flaging vs selecting
-	// add a pointerover and pointerout mouselistener that will listen if and set
-	// over field to true or false
+
 	add_cover(){
-		this._cover = this.scene.add.sprite(this.x,this.y,"block");
+		this._cover = this.scene.add.sprite(this.x,this.y,"cover");
 		this._cover.setOrigin(0,0);
-		this._cover.setInteractive();
-		this._cover.on('pointerdown', this.#cover_clicked);
-		this._cover.on('pointerup', this.#cover_unclicked);
-	}
-
-	#cover_clicked(){
-		//console.log("clicked", this.x, this.y);
-		this.destroy();
-	}
-
-	#cover_unclicked(){
-		//console.log("unclicked", this.x, this.y);
 	}
 
 	delete_cover(){
 		this._cover.destroy();
+		//this._flag.destroy(); // instead maybe add sprite for when flag is incorrelly placed
+	}
+
+	add_flag() {
+		this._flag = this.scene.add.sprite(this.x,this.y,"flag");
+		this._flag.setOrigin(0,0);
+		this._flag.setVisible(false);
 	}
 
 	get_mine_count() {
@@ -48,5 +42,17 @@ class Block extends Phaser.GameObjects.TileSprite{
 
 	set_mine_count(mine_count) {
 		this.#mine_count = mine_count;
+	}
+
+	get_cover() {
+		return this._cover;
+	}
+
+	get_flag_visibility(){
+		return this._flag.visible;
+	}
+
+	toggle_flag_visibility(isToggle){
+		this._flag.setVisible(!this._flag.visible || isToggle); // not working properly. Might have to make the check more complex.
 	}
 }
