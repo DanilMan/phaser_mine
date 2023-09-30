@@ -3,9 +3,9 @@ class Field extends Phaser.GameObjects.Container {
   #mine_counter = 0;
   #rows = 16;
   #cols = 16;
+  #pointer_flag_time = 300;
   #on_down_pointee;
   blocks = [];
-  #scene;
 
   constructor(scene, num_of_mines, mine_counter) {
     super(scene);
@@ -113,25 +113,37 @@ class Field extends Phaser.GameObjects.Container {
     }
   }
 
-  #on_pointer_down() {
+  #on_pointer_down(pointer) {
     if (this.pointee.get_cover().scene === undefined) return;
     this.container.#on_down_pointee = this.pointee;
+    pointer.timer = this.container.scene.time.delayedCall(
+      this.container.#pointer_flag_time,
+      this.container.#set_block_flag,
+      [pointer],
+      this
+    );
+  }
+
+  #set_block_flag(pointer) {
+    if (this.pointee.get_cover().scene === undefined) return; //probably redundant
+    let isToggle = this.pointee.toggle_flag_visibility(
+      this.container.#mine_counter.text > 0
+    );
+    if (isToggle) {
+      this.container.#update_mine_counter(this.pointee.get_flag_visibility());
+    }
   }
 
   #on_pointer_up(pointer) {
+    pointer.timer.destroy();
     if (this.pointee.get_cover().scene === undefined) return;
     if (this.container.#on_down_pointee !== this.pointee) return;
     this.container.#on_down_pointee = undefined;
-
-    if (pointer.upTime - pointer.downTime > 400) {
-      let isToggle = this.pointee.toggle_flag_visibility(
-        this.container.#mine_counter.text > 0
-      );
-      if (isToggle) {
-        this.container.#update_mine_counter(this.pointee.get_flag_visibility());
-      }
-    } else {
-      if (this.pointee.get_flag_visibility() === false) {
+    if (this.pointee.get_flag_visibility() === false) {
+      if (
+        pointer.upTime - pointer.downTime <
+        this.container.#pointer_flag_time
+      ) {
         this.container.#delete_covers(this.pointee);
       }
     }
