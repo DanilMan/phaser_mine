@@ -23,6 +23,7 @@ class Block extends Phaser.GameObjects.TileSprite {
       var text = this.scene.add.text(this.x, this.y, this.get_mine_count());
       text.setFontSize(this.#size);
       text.setColor("black");
+      text.setOrigin(-0.3, -0.1); // find a less icky way to do this. should be setOrigin(0.5, 0.5)
     }
   }
 

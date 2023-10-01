@@ -183,8 +183,9 @@ class Field extends Phaser.GameObjects.Container {
 
   #check_endgame() {
     if (this.#num_of_blocks === 0) {
+      // should covers be deleted in win state?
       this.scene.game_over(1);
-    }
+    } // if not then lock flags
   }
 
   #delete_covers_dfs(pointee) {
@@ -211,6 +212,9 @@ class Field extends Phaser.GameObjects.Container {
               if (
                 this.blocks[bot.posx - 1][bot.posy - 1].get_mine_count() !== 0
               ) {
+                // if the way mines are spawned is fixed, with no mines 2 diags away
+                // instead only one diag away or greater than 2, then the not equal
+                // to zero condition can be removed.
                 search_stack.push(this.blocks[bot.posx - 1][bot.posy - 1]); // top left
               }
             }
