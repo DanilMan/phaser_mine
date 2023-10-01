@@ -48,7 +48,7 @@ class Field extends Phaser.GameObjects.Container {
         let size = Math.floor(game.canvas.width / this.#rows);
         let x = i * size;
         let y = j * size;
-        row[j] = new Block(scene, x, y, size, "block");
+        row[j] = new Block(scene, x, y, i, j, size, "block");
       }
       this.blocks[i] = row;
     }
@@ -144,7 +144,7 @@ class Field extends Phaser.GameObjects.Container {
         pointer.upTime - pointer.downTime <
         this.container.#pointer_flag_time
       ) {
-        this.container.#delete_covers(this.pointee);
+        this.container.#un_cover(this.pointee);
       }
     }
   }
@@ -157,11 +157,12 @@ class Field extends Phaser.GameObjects.Container {
     }
   }
 
-  #delete_covers(pointee) {
+  #un_cover(pointee) {
     if (pointee.get_mine_count() === "_") {
       this.#game_over();
     } else if (pointee.get_mine_count() === 0) {
       // use DFS algorithm to un_cover multiple blocks
+      this.#delete_covers_dfs(pointee);
       pointee.delete_cover(); // make sure the algorithm checks for visible flags as well
     } else {
       pointee.delete_cover();
@@ -175,6 +176,57 @@ class Field extends Phaser.GameObjects.Container {
       }
     }
     this.scene.game_over();
+  }
+
+  #delete_covers_dfs(pointee) {
+    // might potentially clean up method later
+    let size = Math.floor(game.canvas.width / this.#rows);
+    const sole_blocks = new Set();
+    const adj_blocks = new Set();
+    const search_stack = [pointee];
+    while (search_stack.length && search_stack.length < 500) {
+      // while stack is not empty
+      let bot = search_stack.at(length - 1);
+      search_stack.pop();
+      // if not already checked block or flagged
+      if (
+        !sole_blocks.has(bot) &&
+        !adj_blocks.has(bot) &&
+        !bot.get_flag_visibility()
+      ) {
+        if (bot.get_mine_count() === 0) {
+          sole_blocks.add(bot);
+          if (bot.posx - 1 > -1) {
+            search_stack.push(this.blocks[bot.posx - 1][bot.posy]); // top
+            if (bot.posy - 1 > -1)
+              search_stack.push(this.blocks[bot.posx - 1][bot.posy - 1]); // top left
+          }
+          if (bot.posy - 1 > -1) {
+            search_stack.push(this.blocks[bot.posx][bot.posy - 1]); // left
+            if (bot.posx + 1 < this.#rows)
+              search_stack.push(this.blocks[bot.posx + 1][bot.posy - 1]); // bottom left
+          }
+          if (bot.posx + 1 < this.#rows) {
+            search_stack.push(this.blocks[bot.posx + 1][bot.posy]); // bottom
+            if (bot.posy + 1 < this.#cols)
+              search_stack.push(this.blocks[bot.posx + 1][bot.posy + 1]); // bottom right
+          }
+          if (bot.posy + 1 < this.#cols) {
+            search_stack.push(this.blocks[bot.posx][bot.posy + 1]); // right
+            if (bot.posx - 1 > -1)
+              search_stack.push(this.blocks[bot.posx - 1][bot.posy + 1]); // top right
+          }
+        } else if (bot.get_mine_count() !== "_") {
+          adj_blocks.add(bot);
+        }
+      }
+    }
+    for (const block of sole_blocks) {
+      block.delete_cover();
+    }
+    for (const block of adj_blocks) {
+      block.delete_cover();
+    }
   }
 
   debug_print_blocks() {

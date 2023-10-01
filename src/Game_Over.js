@@ -5,11 +5,11 @@ class Game_Over extends Phaser.Scene {
 
   create() {
     var text = this.add
-      .text(game.canvas.width / 2, game.canvas.height / 2, "Replay", {
-        color: "#000",
-        fontSize: "32px",
+      .text(game.canvas.width / 2, game.canvas.height / 2, "REPLAY", {
         fontFamily: "Roboto",
-        backgroundColor: "#fff",
+        fontSize: "32px",
+        color: "#fff",
+        backgroundColor: "#000",
       })
       .setOrigin(0.5);
     text.setInteractive();
