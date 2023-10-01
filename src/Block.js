@@ -32,7 +32,12 @@ class Block extends Phaser.GameObjects.TileSprite {
   }
 
   delete_cover() {
-    this._cover.destroy();
+    if (this._cover.scene === undefined) {
+      return false;
+    } else {
+      this._cover.destroy();
+      return true;
+    }
     //this._flag.destroy(); // instead maybe add sprite for when flag is incorrelly placed
   }
 

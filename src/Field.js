@@ -1,4 +1,5 @@
 class Field extends Phaser.GameObjects.Container {
+  #num_of_blocks = 0;
   #num_of_mines = 0;
   #mine_counter = 0;
   #rows = 16;
@@ -34,6 +35,7 @@ class Field extends Phaser.GameObjects.Container {
       default:
         this.#num_of_mines = this.#rows * 2;
     }
+    this.#num_of_blocks = this.#cols * this.#rows - this.#num_of_mines;
   }
 
   #init_mine_counter(mine_counter) {
@@ -161,11 +163,12 @@ class Field extends Phaser.GameObjects.Container {
     if (pointee.get_mine_count() === "_") {
       this.#game_over();
     } else if (pointee.get_mine_count() === 0) {
-      // use DFS algorithm to un_cover multiple blocks
       this.#delete_covers_dfs(pointee);
-      pointee.delete_cover(); // make sure the algorithm checks for visible flags as well
     } else {
-      pointee.delete_cover();
+      if (pointee.delete_cover()) {
+        this.#num_of_blocks--;
+        this.#check_endgame();
+      }
     }
   }
 
@@ -175,16 +178,21 @@ class Field extends Phaser.GameObjects.Container {
         this.blocks[i][j].delete_cover();
       }
     }
-    this.scene.game_over();
+    this.scene.game_over(0);
+  }
+
+  #check_endgame() {
+    if (this.#num_of_blocks === 0) {
+      this.scene.game_over(1);
+    }
   }
 
   #delete_covers_dfs(pointee) {
     // might potentially clean up method later
-    let size = Math.floor(game.canvas.width / this.#rows);
     const sole_blocks = new Set();
     const adj_blocks = new Set();
     const search_stack = [pointee];
-    while (search_stack.length && search_stack.length < 500) {
+    while (search_stack.length) {
       // while stack is not empty
       let bot = search_stack.at(length - 1);
       search_stack.pop();
@@ -196,25 +204,46 @@ class Field extends Phaser.GameObjects.Container {
       ) {
         if (bot.get_mine_count() === 0) {
           sole_blocks.add(bot);
+          // clean this up with a method
           if (bot.posx - 1 > -1) {
             search_stack.push(this.blocks[bot.posx - 1][bot.posy]); // top
-            if (bot.posy - 1 > -1)
-              search_stack.push(this.blocks[bot.posx - 1][bot.posy - 1]); // top left
+            if (bot.posy - 1 > -1) {
+              if (
+                this.blocks[bot.posx - 1][bot.posy - 1].get_mine_count() !== 0
+              ) {
+                search_stack.push(this.blocks[bot.posx - 1][bot.posy - 1]); // top left
+              }
+            }
           }
           if (bot.posy - 1 > -1) {
             search_stack.push(this.blocks[bot.posx][bot.posy - 1]); // left
-            if (bot.posx + 1 < this.#rows)
-              search_stack.push(this.blocks[bot.posx + 1][bot.posy - 1]); // bottom left
+            if (bot.posx + 1 < this.#rows) {
+              if (
+                this.blocks[bot.posx + 1][bot.posy - 1].get_mine_count() !== 0
+              ) {
+                search_stack.push(this.blocks[bot.posx + 1][bot.posy - 1]); // bottom left
+              }
+            }
           }
           if (bot.posx + 1 < this.#rows) {
             search_stack.push(this.blocks[bot.posx + 1][bot.posy]); // bottom
-            if (bot.posy + 1 < this.#cols)
-              search_stack.push(this.blocks[bot.posx + 1][bot.posy + 1]); // bottom right
+            if (bot.posy + 1 < this.#cols) {
+              if (
+                this.blocks[bot.posx + 1][bot.posy + 1].get_mine_count() !== 0
+              ) {
+                search_stack.push(this.blocks[bot.posx + 1][bot.posy + 1]); // bottom right
+              }
+            }
           }
           if (bot.posy + 1 < this.#cols) {
             search_stack.push(this.blocks[bot.posx][bot.posy + 1]); // right
-            if (bot.posx - 1 > -1)
-              search_stack.push(this.blocks[bot.posx - 1][bot.posy + 1]); // top right
+            if (bot.posx - 1 > -1) {
+              if (
+                this.blocks[bot.posx - 1][bot.posy + 1].get_mine_count() !== 0
+              ) {
+                search_stack.push(this.blocks[bot.posx - 1][bot.posy + 1]); // top right
+              }
+            }
           }
         } else if (bot.get_mine_count() !== "_") {
           adj_blocks.add(bot);
@@ -222,11 +251,12 @@ class Field extends Phaser.GameObjects.Container {
       }
     }
     for (const block of sole_blocks) {
-      block.delete_cover();
+      if (block.delete_cover()) this.#num_of_blocks--;
     }
     for (const block of adj_blocks) {
-      block.delete_cover();
+      if (block.delete_cover()) this.#num_of_blocks--;
     }
+    this.#check_endgame();
   }
 
   debug_print_blocks() {

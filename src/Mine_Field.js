@@ -20,10 +20,10 @@ class Mine_Field extends Phaser.Scene {
     );
     mine_counter.setOrigin(0.5, 0.5);
     mine_counter.setFontSize(50);
-    var scene_field = new Field(this, 1, mine_counter);
+    var scene_field = new Field(this, 0, mine_counter);
   }
 
-  game_over() {
-    game.scene.start("endGame");
+  game_over(state) {
+    game.scene.start("endGame", { state: state });
   }
 }

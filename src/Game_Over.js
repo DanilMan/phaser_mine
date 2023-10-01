@@ -3,9 +3,10 @@ class Game_Over extends Phaser.Scene {
     super("endGame");
   }
 
-  create() {
+  create(data) {
+    let word = data.state === 0 ? "RETRY" : "REPLAY";
     var text = this.add
-      .text(game.canvas.width / 2, game.canvas.height / 2, "REPLAY", {
+      .text(game.canvas.width / 2, game.canvas.height / 2, word, {
         fontFamily: "Roboto",
         fontSize: "32px",
         color: "#fff",
