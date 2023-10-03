@@ -3,8 +3,9 @@ class Block extends Phaser.GameObjects.TileSprite {
   #size = 0;
   posx;
   posy;
-  _flag;
   _cover;
+  _flag;
+  _x;
 
   constructor(scene, x, y, i, j, size, img) {
     super(scene, x, y, size, size, img);
@@ -33,19 +34,28 @@ class Block extends Phaser.GameObjects.TileSprite {
   }
 
   delete_cover() {
-    if (this._cover.scene === undefined) {
+    if (this.is_uncovered()) {
+      return false;
+    } else if (this.is_flag_visibile()) {
+      this._flag.destroy();
+      this._x.visible = true;
       return false;
     } else {
       this._cover.destroy();
       return true;
     }
-    //this._flag.destroy(); // instead maybe add sprite for when flag is incorrelly placed
   }
 
   add_flag() {
     this._flag = this.scene.add.sprite(this.x, this.y, "flag");
     this._flag.setOrigin(0, 0);
     this._flag.setVisible(false);
+  }
+
+  add_x() {
+    this._x = this.scene.add.sprite(this.x, this.y, "x");
+    this._x.setOrigin(0, 0);
+    this._x.setVisible(false);
   }
 
   get_mine_count() {
@@ -56,11 +66,11 @@ class Block extends Phaser.GameObjects.TileSprite {
     this.#mine_count = mine_count;
   }
 
-  get_cover() {
-    return this._cover;
+  is_uncovered() {
+    return this._cover.scene === undefined;
   }
 
-  get_flag_visibility() {
+  is_flag_visibile() {
     return this._flag.visible;
   }
 
@@ -70,5 +80,9 @@ class Block extends Phaser.GameObjects.TileSprite {
       this._flag.setVisible(!this._flag.visible);
     }
     return isToggle;
+  }
+
+  is_mine() {
+    return false;
   }
 }

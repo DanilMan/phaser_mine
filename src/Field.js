@@ -56,6 +56,15 @@ class Field extends Phaser.GameObjects.Container {
     }
   }
 
+  #get_ran_sel(num_of_mines, field_range) {
+    var arr = [];
+    while (arr.length < num_of_mines) {
+      var r = Math.floor(Math.random() * field_range);
+      if (arr.indexOf(r) === -1) arr.push(r);
+    }
+    return arr;
+  }
+
   #init_mines() {
     var mine_pos = this.#get_ran_sel(
       this.#num_of_mines,
@@ -85,15 +94,6 @@ class Field extends Phaser.GameObjects.Container {
     }
   }
 
-  #get_ran_sel(num_of_mines, field_range) {
-    var arr = [];
-    while (arr.length < num_of_mines) {
-      var r = Math.floor(Math.random() * field_range);
-      if (arr.indexOf(r) === -1) arr.push(r);
-    }
-    return arr;
-  }
-
   #add_to_scene() {
     for (let i = 0; i < this.#rows; i++) {
       for (let j = 0; j < this.#cols; j++) {
@@ -102,6 +102,7 @@ class Field extends Phaser.GameObjects.Container {
         block.add_count_text();
         block.add_cover();
         block.add_flag();
+        block.add_x();
         block.setInteractive();
         block.on("pointerdown", this.#on_pointer_down, {
           container: this,
@@ -116,7 +117,7 @@ class Field extends Phaser.GameObjects.Container {
   }
 
   #on_pointer_down(pointer) {
-    if (this.pointee.get_cover().scene === undefined) return;
+    if (this.pointee.is_uncovered()) return;
     this.container.#on_down_pointee = this.pointee;
     pointer.timer = this.container.scene.time.delayedCall(
       this.container.#pointer_flag_time,
@@ -127,21 +128,21 @@ class Field extends Phaser.GameObjects.Container {
   }
 
   #set_block_flag(pointer) {
-    if (this.pointee.get_cover().scene === undefined) return; //probably redundant
-    let isToggle = this.pointee.toggle_flag_visibility(
+    if (this.pointee.is_uncovered()) return;
+    let is_toggle = this.pointee.toggle_flag_visibility(
       this.container.#mine_counter.text > 0
     );
-    if (isToggle) {
-      this.container.#update_mine_counter(this.pointee.get_flag_visibility());
+    if (is_toggle) {
+      this.container.#update_mine_counter(this.pointee.is_flag_visibile());
     }
   }
 
   #on_pointer_up(pointer) {
     pointer.timer.destroy();
-    if (this.pointee.get_cover().scene === undefined) return;
+    if (this.pointee.is_uncovered()) return;
     if (this.container.#on_down_pointee !== this.pointee) return;
     this.container.#on_down_pointee = undefined;
-    if (this.pointee.get_flag_visibility() === false) {
+    if (this.pointee.is_flag_visibile() === false) {
       if (
         pointer.upTime - pointer.downTime <
         this.container.#pointer_flag_time
@@ -160,12 +161,13 @@ class Field extends Phaser.GameObjects.Container {
   }
 
   #un_cover(pointee) {
-    if (pointee.get_mine_count() === "_") {
+    if (pointee.is_mine()) {
+      pointee.delete_cover(true);
       this.#game_over();
     } else if (pointee.get_mine_count() === 0) {
       this.#delete_covers_dfs(pointee);
     } else {
-      if (pointee.delete_cover()) {
+      if (pointee.delete_cover(false)) {
         this.#num_of_blocks--;
         this.#check_endgame();
       }
@@ -175,7 +177,7 @@ class Field extends Phaser.GameObjects.Container {
   #game_over() {
     for (let i = 0; i < this.#rows; i++) {
       for (let j = 0; j < this.#cols; j++) {
-        this.blocks[i][j].delete_cover();
+        this.blocks[i][j].delete_cover(false);
       }
     }
     this.scene.game_over(0);
@@ -183,82 +185,61 @@ class Field extends Phaser.GameObjects.Container {
 
   #check_endgame() {
     if (this.#num_of_blocks === 0) {
-      // should covers be deleted in win state?
       this.scene.game_over(1);
-    } // if not then lock flags
+    }
   }
 
   #delete_covers_dfs(pointee) {
-    // might potentially clean up method later
     const sole_blocks = new Set();
     const adj_blocks = new Set();
     const search_stack = [pointee];
     while (search_stack.length) {
       // while stack is not empty
-      let bot = search_stack.at(length - 1);
+      let bottom = search_stack.at(length - 1);
       search_stack.pop();
       // if not already checked block or flagged
       if (
-        !sole_blocks.has(bot) &&
-        !adj_blocks.has(bot) &&
-        !bot.get_flag_visibility()
+        !sole_blocks.has(bottom) &&
+        !adj_blocks.has(bottom) &&
+        !bottom.is_flag_visibile()
       ) {
-        if (bot.get_mine_count() === 0) {
-          sole_blocks.add(bot);
+        if (bottom.get_mine_count() === 0) {
+          sole_blocks.add(bottom);
           // clean this up with a method
-          if (bot.posx - 1 > -1) {
-            search_stack.push(this.blocks[bot.posx - 1][bot.posy]); // top
-            if (bot.posy - 1 > -1) {
-              if (
-                this.blocks[bot.posx - 1][bot.posy - 1].get_mine_count() !== 0
-              ) {
-                // if the way mines are spawned is fixed, with no mines 2 diags away
-                // instead only one diag away or greater than 2, then the not equal
-                // to zero condition can be removed.
-                search_stack.push(this.blocks[bot.posx - 1][bot.posy - 1]); // top left
-              }
+          if (bottom.posx - 1 > -1) {
+            search_stack.push(this.blocks[bottom.posx - 1][bottom.posy]); // top
+            if (bottom.posy - 1 > -1) {
+              search_stack.push(this.blocks[bottom.posx - 1][bottom.posy - 1]); // top left
             }
           }
-          if (bot.posy - 1 > -1) {
-            search_stack.push(this.blocks[bot.posx][bot.posy - 1]); // left
-            if (bot.posx + 1 < this.#rows) {
-              if (
-                this.blocks[bot.posx + 1][bot.posy - 1].get_mine_count() !== 0
-              ) {
-                search_stack.push(this.blocks[bot.posx + 1][bot.posy - 1]); // bottom left
-              }
+          if (bottom.posy - 1 > -1) {
+            search_stack.push(this.blocks[bottom.posx][bottom.posy - 1]); // left
+            if (bottom.posx + 1 < this.#rows) {
+              search_stack.push(this.blocks[bottom.posx + 1][bottom.posy - 1]); // bottom left
             }
           }
-          if (bot.posx + 1 < this.#rows) {
-            search_stack.push(this.blocks[bot.posx + 1][bot.posy]); // bottom
-            if (bot.posy + 1 < this.#cols) {
-              if (
-                this.blocks[bot.posx + 1][bot.posy + 1].get_mine_count() !== 0
-              ) {
-                search_stack.push(this.blocks[bot.posx + 1][bot.posy + 1]); // bottom right
-              }
+          if (bottom.posx + 1 < this.#rows) {
+            search_stack.push(this.blocks[bottom.posx + 1][bottom.posy]); // bottom
+            if (bottom.posy + 1 < this.#cols) {
+              search_stack.push(this.blocks[bottom.posx + 1][bottom.posy + 1]); // bottom right
             }
           }
-          if (bot.posy + 1 < this.#cols) {
-            search_stack.push(this.blocks[bot.posx][bot.posy + 1]); // right
-            if (bot.posx - 1 > -1) {
-              if (
-                this.blocks[bot.posx - 1][bot.posy + 1].get_mine_count() !== 0
-              ) {
-                search_stack.push(this.blocks[bot.posx - 1][bot.posy + 1]); // top right
-              }
+          if (bottom.posy + 1 < this.#cols) {
+            search_stack.push(this.blocks[bottom.posx][bottom.posy + 1]); // right
+            if (bottom.posx - 1 > -1) {
+              search_stack.push(this.blocks[bottom.posx - 1][bottom.posy + 1]); // top right
             }
           }
-        } else if (bot.get_mine_count() !== "_") {
-          adj_blocks.add(bot);
+        } else if (!bottom.is_mine()) {
+          adj_blocks.add(bottom);
         }
       }
     }
     for (const block of sole_blocks) {
-      if (block.delete_cover()) this.#num_of_blocks--;
+      if (block.delete_cover(false)) this.#num_of_blocks--;
     }
     for (const block of adj_blocks) {
-      if (block.delete_cover()) this.#num_of_blocks--;
+      if (block.delete_cover(false)) this.#num_of_blocks--;
     }
     this.#check_endgame();
   }

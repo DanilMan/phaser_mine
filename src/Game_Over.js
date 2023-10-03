@@ -4,6 +4,7 @@ class Game_Over extends Phaser.Scene {
   }
 
   create(data) {
+    game.scene.pause("playGame");
     let word = data.state === 0 ? "RETRY" : "REPLAY";
     var text = this.add
       .text(game.canvas.width / 2, game.canvas.height / 2, word, {
