@@ -75,7 +75,7 @@ class Field extends Phaser.GameObjects.Container {
       let row = Math.floor(unseriealized_pos / this.#rows);
       let col = unseriealized_pos % this.#cols;
       let curr = this.blocks[row][col];
-      this.blocks[row][col] = new Mine_Block(curr, "bomb");
+      this.blocks[row][col] = new Mine_Block(curr, "mine");
       this.#inc_mine_counts(row, col);
     }
   }

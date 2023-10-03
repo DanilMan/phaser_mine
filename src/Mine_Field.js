@@ -9,7 +9,7 @@ class Mine_Field extends Phaser.Scene {
     this.load.image("block", "assets/imgs/block.png");
     this.load.image("cover", "assets/imgs/cover.png");
     this.load.image("flag", "assets/imgs/flag.png");
-    this.load.image("bomb", "assets/imgs/bomb.png");
+    this.load.image("mine", "assets/imgs/mine.png");
     this.load.image("x", "assets/imgs/x.png");
   }
 
