@@ -37,7 +37,6 @@ class Block extends Phaser.GameObjects.TileSprite {
     if (this.is_uncovered()) {
       return false;
     } else if (this.is_flag_visibile()) {
-      this._flag.destroy();
       this._x.visible = true;
       return false;
     } else {
@@ -80,6 +79,10 @@ class Block extends Phaser.GameObjects.TileSprite {
       this._flag.setVisible(!this._flag.visible);
     }
     return isToggle;
+  }
+
+  set_flag_visible() {
+    // do nothing
   }
 
   is_mine() {

@@ -169,23 +169,41 @@ class Field extends Phaser.GameObjects.Container {
     } else {
       if (pointee.delete_cover(false)) {
         this.#num_of_blocks--;
-        this.#check_endgame();
+        this.#check_win_condition();
       }
     }
   }
 
   #game_over() {
+    this.#delete_all_covers();
+    this.scene.game_over(0);
+  }
+
+  #check_win_condition() {
+    if (this.#num_of_blocks === 0) {
+      this.#game_win();
+    }
+  }
+
+  #game_win() {
+    this.#set_mine_flags_vis();
+    this.#mine_counter = 0;
+    this.scene.game_over(1);
+  }
+
+  #delete_all_covers() {
     for (let i = 0; i < this.#rows; i++) {
       for (let j = 0; j < this.#cols; j++) {
         this.blocks[i][j].delete_cover(false);
       }
     }
-    this.scene.game_over(0);
   }
 
-  #check_endgame() {
-    if (this.#num_of_blocks === 0) {
-      this.scene.game_over(1);
+  #set_mine_flags_vis() {
+    for (let i = 0; i < this.#rows; i++) {
+      for (let j = 0; j < this.#cols; j++) {
+        this.blocks[i][j].set_flag_visible();
+      }
     }
   }
 
@@ -194,7 +212,6 @@ class Field extends Phaser.GameObjects.Container {
     const adj_blocks = new Set();
     const search_stack = [pointee];
     while (search_stack.length) {
-      // while stack is not empty
       let bottom = search_stack.at(length - 1);
       search_stack.pop();
       // if not already checked block or flagged
@@ -205,31 +222,7 @@ class Field extends Phaser.GameObjects.Container {
       ) {
         if (bottom.get_mine_count() === 0) {
           sole_blocks.add(bottom);
-          // clean this up with a method
-          if (bottom.posx - 1 > -1) {
-            search_stack.push(this.blocks[bottom.posx - 1][bottom.posy]); // top
-            if (bottom.posy - 1 > -1) {
-              search_stack.push(this.blocks[bottom.posx - 1][bottom.posy - 1]); // top left
-            }
-          }
-          if (bottom.posy - 1 > -1) {
-            search_stack.push(this.blocks[bottom.posx][bottom.posy - 1]); // left
-            if (bottom.posx + 1 < this.#rows) {
-              search_stack.push(this.blocks[bottom.posx + 1][bottom.posy - 1]); // bottom left
-            }
-          }
-          if (bottom.posx + 1 < this.#rows) {
-            search_stack.push(this.blocks[bottom.posx + 1][bottom.posy]); // bottom
-            if (bottom.posy + 1 < this.#cols) {
-              search_stack.push(this.blocks[bottom.posx + 1][bottom.posy + 1]); // bottom right
-            }
-          }
-          if (bottom.posy + 1 < this.#cols) {
-            search_stack.push(this.blocks[bottom.posx][bottom.posy + 1]); // right
-            if (bottom.posx - 1 > -1) {
-              search_stack.push(this.blocks[bottom.posx - 1][bottom.posy + 1]); // top right
-            }
-          }
+          this.check_near_blocks(search_stack, bottom);
         } else if (!bottom.is_mine()) {
           adj_blocks.add(bottom);
         }
@@ -241,7 +234,40 @@ class Field extends Phaser.GameObjects.Container {
     for (const block of adj_blocks) {
       if (block.delete_cover(false)) this.#num_of_blocks--;
     }
-    this.#check_endgame();
+    this.#check_win_condition();
+  }
+
+  check_near_blocks(stack, block) {
+    let is_top_block = block.posx - 1 > -1;
+    let is_bot_block = block.posx + 1 < this.#rows;
+    let is_left_block = block.posy - 1 > -1;
+    let is_right_block = block.posy + 1 < this.#cols;
+    let posx = block.posx;
+    let posy = block.posy;
+    if (is_top_block) {
+      stack.push(this.blocks[posx - 1][posy]); // top center
+      if (is_left_block) {
+        stack.push(this.blocks[posx - 1][posy - 1]); // top left
+      }
+      if (is_right_block) {
+        stack.push(this.blocks[posx - 1][posy + 1]); // top right
+      }
+    }
+    if (is_bot_block) {
+      stack.push(this.blocks[posx + 1][posy]); // bot center
+      if (is_left_block) {
+        stack.push(this.blocks[posx + 1][posy - 1]); // bot left
+      }
+      if (is_right_block) {
+        stack.push(this.blocks[posx + 1][posy + 1]); // bot right
+      }
+    }
+    if (is_left_block) {
+      stack.push(this.blocks[posx][posy - 1]); // left middle
+    }
+    if (is_right_block) {
+      stack.push(this.blocks[posx][posy + 1]); // right middle
+    }
   }
 
   debug_print_blocks() {

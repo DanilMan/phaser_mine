@@ -35,6 +35,10 @@ class Mine_Block extends Block {
     //do nothing
   }
 
+  set_flag_visible() {
+    this._flag.setVisible(true);
+  }
+
   is_mine() {
     return true;
   }
