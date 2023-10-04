@@ -100,6 +100,7 @@ class Field extends Phaser.GameObjects.Container {
         let block = this.blocks[i][j];
         block.add_blocks();
         block.add_count_text();
+        block.add_item();
         block.add_cover();
         block.add_flag();
         block.add_x();
@@ -162,12 +163,14 @@ class Field extends Phaser.GameObjects.Container {
 
   #un_cover(pointee) {
     if (pointee.is_mine()) {
-      pointee.delete_cover(true);
+      pointee.pointer_del_cover();
       this.#game_over();
-    } else if (pointee.get_mine_count() === 0) {
+    } else if (pointee.is_far()) {
+      //pointee is far block
       this.#delete_covers_dfs(pointee);
     } else {
-      if (pointee.delete_cover(false)) {
+      if (pointee.pointer_del_cover()) {
+        // pointee is near block
         this.#num_of_blocks--;
         this.#check_win_condition();
       }
@@ -187,14 +190,14 @@ class Field extends Phaser.GameObjects.Container {
 
   #game_win() {
     this.#set_mine_flags_vis();
-    this.#mine_counter = 0;
+    this.#mine_counter.setText("0");
     this.scene.game_over(1);
   }
 
   #delete_all_covers() {
     for (let i = 0; i < this.#rows; i++) {
       for (let j = 0; j < this.#cols; j++) {
-        this.blocks[i][j].delete_cover(false);
+        this.blocks[i][j].delete_cover();
       }
     }
   }
@@ -220,7 +223,7 @@ class Field extends Phaser.GameObjects.Container {
         !adj_blocks.has(bottom) &&
         !bottom.is_flag_visibile()
       ) {
-        if (bottom.get_mine_count() === 0) {
+        if (bottom.is_far()) {
           sole_blocks.add(bottom);
           this.check_near_blocks(search_stack, bottom);
         } else if (!bottom.is_mine()) {
@@ -229,10 +232,10 @@ class Field extends Phaser.GameObjects.Container {
       }
     }
     for (const block of sole_blocks) {
-      if (block.delete_cover(false)) this.#num_of_blocks--;
+      if (block.delete_cover()) this.#num_of_blocks--;
     }
     for (const block of adj_blocks) {
-      if (block.delete_cover(false)) this.#num_of_blocks--;
+      if (block.delete_cover()) this.#num_of_blocks--;
     }
     this.#check_win_condition();
   }

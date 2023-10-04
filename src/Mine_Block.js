@@ -1,4 +1,7 @@
 class Mine_Block extends Block {
+  #mine_img;
+  #mine;
+
   constructor(parent, img) {
     super(
       parent.scene,
@@ -7,22 +10,36 @@ class Mine_Block extends Block {
       parent.posx,
       parent.posy,
       parent.width,
-      img
+      parent._background_img
     );
+    this.#mine_img = img;
   }
 
   add_count_text() {
     //do nothing
   }
 
-  delete_cover(clicked) {
+  add_item() {
+    this.#mine = this.scene.add.sprite(this.x, this.y, this.#mine_img);
+    this.#mine.setOrigin(0, 0);
+  }
+
+  pointer_del_cover() {
+    if (this.is_uncovered()) {
+      return false;
+    } else {
+      this._cover.destroy();
+      this.setTint("0xff1a1a", "0xff1a1a", "0xff1a1a", "0xff1a1a");
+      this.#mine.setTint("0xff1a1a", "0xff1a1a", "0xff1a1a", "0xff1a1a");
+      return true;
+    }
+  }
+
+  delete_cover() {
     if (this.is_flag_visibile() || this.is_uncovered()) {
       return false;
     } else {
       this._cover.destroy();
-      if (clicked) {
-        this.setTint("0xff1a1a", "0xff1a1a", "0xff1a1a", "0xff1a1a");
-      }
       return true;
     }
   }

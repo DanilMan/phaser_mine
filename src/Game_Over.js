@@ -7,11 +7,10 @@ class Game_Over extends Phaser.Scene {
     game.scene.pause("playGame");
     let word = data.state === 0 ? "RETRY" : "REPLAY";
     var text = this.add
-      .text(game.canvas.width / 2, game.canvas.height / 2, word, {
+      .text(game.canvas.width / 8, game.canvas.height - 25, word, {
         fontFamily: "Roboto",
         fontSize: "32px",
-        color: "#fff",
-        backgroundColor: "#000",
+        color: "#ebedf0",
       })
       .setOrigin(0.5);
     text.setInteractive();

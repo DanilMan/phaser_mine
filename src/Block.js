@@ -3,6 +3,7 @@ class Block extends Phaser.GameObjects.TileSprite {
   #size = 0;
   posx;
   posy;
+  _background_img;
   _cover;
   _flag;
   _x;
@@ -12,6 +13,7 @@ class Block extends Phaser.GameObjects.TileSprite {
     this.posx = i;
     this.posy = j;
     this.#size = size;
+    this._background_img = img;
     this.setOrigin(0, 0);
   }
 
@@ -23,7 +25,7 @@ class Block extends Phaser.GameObjects.TileSprite {
     if (this.get_mine_count() !== 0) {
       var text = this.scene.add.text(this.x, this.y, this.get_mine_count());
       text.setFontSize(this.#size);
-      text.setColor("black");
+      text.setColor("#ebedf0");
       text.setOrigin(-0.3, -0.1); // find a less icky way to do this. should be setOrigin(0.5, 0.5)
     }
   }
@@ -31,6 +33,19 @@ class Block extends Phaser.GameObjects.TileSprite {
   add_cover() {
     this._cover = this.scene.add.sprite(this.x, this.y, "cover");
     this._cover.setOrigin(0, 0);
+  }
+
+  add_item() {
+    // do nothing
+  }
+
+  pointer_del_cover() {
+    if (this.is_uncovered()) {
+      return false;
+    } else {
+      this._cover.destroy();
+      return true;
+    }
   }
 
   delete_cover() {
@@ -63,6 +78,10 @@ class Block extends Phaser.GameObjects.TileSprite {
 
   set_mine_count(mine_count) {
     this.#mine_count = mine_count;
+  }
+
+  is_far() {
+    return this.#mine_count === 0;
   }
 
   is_uncovered() {
