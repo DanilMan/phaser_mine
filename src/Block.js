@@ -15,6 +15,7 @@ class Block extends Phaser.GameObjects.TileSprite {
     this.#size = size;
     this._background_img = img;
     this.setOrigin(0, 0);
+    //this.setTileScale(2); add this in later if you choose to add a resized grid option.
   }
 
   add_blocks() {
@@ -33,6 +34,7 @@ class Block extends Phaser.GameObjects.TileSprite {
   add_cover() {
     this._cover = this.scene.add.sprite(this.x, this.y, "cover");
     this._cover.setOrigin(0, 0);
+    //this._cover.setScale(2);
   }
 
   add_item() {
@@ -64,12 +66,14 @@ class Block extends Phaser.GameObjects.TileSprite {
     this._flag = this.scene.add.sprite(this.x, this.y, "flag");
     this._flag.setOrigin(0, 0);
     this._flag.setVisible(false);
+    //this._flag.setScale(2);
   }
 
   add_x() {
     this._x = this.scene.add.sprite(this.x, this.y, "x");
     this._x.setOrigin(0, 0);
     this._x.setVisible(false);
+    //this._x.setScale(2);
   }
 
   get_mine_count() {

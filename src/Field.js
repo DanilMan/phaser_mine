@@ -6,14 +6,17 @@ class Field extends Phaser.GameObjects.Container {
   #cols = 16;
   #pointer_flag_time = 300;
   #on_down_pointee;
+  #mine_blocks = [];
+  #safe_blocks;
+  #block_pos;
   blocks = [];
 
   constructor(scene, num_of_mines, mine_counter) {
     super(scene);
     this.#diff_level(num_of_mines);
     this.#init_mine_counter(mine_counter);
+    this.#init_positions();
     this.#init_field(scene);
-    this.#init_mines();
     this.#add_to_scene();
   }
 
@@ -43,39 +46,129 @@ class Field extends Phaser.GameObjects.Container {
     this.#mine_counter.setText(this.#num_of_mines);
   }
 
+  #init_positions() {
+    var area = this.#num_of_mines + this.#num_of_blocks; // get num of all blocks
+    var num_of_adj = this.#num_of_blocks / 6;
+    var adj_blocks = [];
+    this.#block_pos = Array(area);
+    this.#fill_array_helper(this.#block_pos); // set block_pos array and populate with 0
+    this.#safe_blocks = Array.from({ length: area }, (v, i) => i); // pop #safe_blocks with all possible positions
+    for (let i = 0; i < this.#num_of_mines; i++) {
+      let r = Math.floor(Math.random() * area);
+      let mine_pos = this.#safe_blocks[r];
+      this.#mine_blocks.push(mine_pos);
+      this.#block_pos[mine_pos] = 1;
+      this.#safe_blocks[r] = this.#safe_blocks[--area];
+      this.#safe_blocks.pop();
+      if (num_of_adj-- > 0) {
+        if (mine_pos % 2 == 0) {
+          area = this.#push_orth_pop_safe(adj_blocks, area, r);
+        } else {
+          area = this.#push_diag_pop_safe(adj_blocks, area, r);
+        }
+      }
+    }
+    this.#add_elements(adj_blocks);
+    this.#mine_blocks.sort(function (a, b) {
+      return a - b;
+    });
+    this.#safe_blocks.sort(function (a, b) {
+      return a - b;
+    });
+    // for (let i = 0; i < this.#block_pos.length; i++) {
+    //   console.log(i + ": " + this.#block_pos[i]);
+    // }
+    // for (let i = 0; i < adj_blocks.length; i++) {
+    //   console.log(i + ": " + adj_blocks[i]);
+    // }
+    // for (let i = 0; i < this.#safe_blocks.length; i++) {
+    //   console.log(i + ": " + this.#safe_blocks[i]);
+    // }
+    // for (let i = 0; i < this.#mine_blocks.length; i++) {
+    //   console.log(i + ": " + this.#mine_blocks[i]);
+    // }
+  }
+
+  #fill_array_helper(array) {
+    for (let i = 0; i < array.length; i++) {
+      array[i] = 0;
+    }
+  }
+
+  #push_orth_pop_safe(adj_blocks, area, r) {
+    if (r + 1 < area) {
+      adj_blocks.push(this.#safe_blocks[r + 1]);
+      this.#safe_blocks[r + 1] = this.#safe_blocks[--area];
+      this.#safe_blocks.pop();
+    }
+    if (r - 1 > -1) {
+      adj_blocks.push(this.#safe_blocks[r - 1]);
+      this.#safe_blocks[r - 1] = this.#safe_blocks[--area];
+      this.#safe_blocks.pop();
+    }
+    if (r + this.#rows < area) {
+      adj_blocks.push(this.#safe_blocks[r + this.#rows]);
+      this.#safe_blocks[r + this.#rows] = this.#safe_blocks[--area];
+      this.#safe_blocks.pop();
+    }
+    if (r - this.#rows > -1) {
+      adj_blocks.push(this.#safe_blocks[r - this.#rows]);
+      this.#safe_blocks[r - this.#rows] = this.#safe_blocks[--area];
+      this.#safe_blocks.pop();
+    }
+    return area;
+  }
+
+  #push_diag_pop_safe(adj_blocks, area, r) {
+    if (r + this.#rows + 1 < area) {
+      adj_blocks.push(this.#safe_blocks[r + this.#rows + 1]);
+      this.#safe_blocks[r + this.#rows + 1] = this.#safe_blocks[--area];
+      this.#safe_blocks.pop();
+    }
+    if (r + this.#rows - 1 < area) {
+      adj_blocks.push(this.#safe_blocks[r + this.#rows - 1]);
+      this.#safe_blocks[r + this.#rows - 1] = this.#safe_blocks[--area];
+      this.#safe_blocks.pop();
+    }
+    if (r - this.#rows + 1 > -1) {
+      adj_blocks.push(this.#safe_blocks[r - this.#rows + 1]);
+      this.#safe_blocks[r - this.#rows + 1] = this.#safe_blocks[--area];
+      this.#safe_blocks.pop();
+    }
+    if (r - this.#rows - 1 > -1) {
+      adj_blocks.push(this.#safe_blocks[r - this.#rows - 1]);
+      this.#safe_blocks[r - this.#rows - 1] = this.#safe_blocks[--area];
+      this.#safe_blocks.pop();
+    }
+    return area;
+  }
+
+  #add_elements(adj_blocks) {
+    for (const b of adj_blocks) {
+      this.#safe_blocks.push(b);
+    }
+  }
+
   #init_field(scene) {
+    var size = Math.floor(game.canvas.width / this.#rows);
+    var block_count = 0;
     for (let i = 0; i < this.#rows; i++) {
       let row = [];
       for (let j = 0; j < this.#cols; j++) {
-        let size = Math.floor(game.canvas.width / this.#rows);
         let x = i * size;
         let y = j * size;
-        row[j] = new Block(scene, x, y, i, j, size, "block");
+        if (this.#block_pos[block_count] == 0) {
+          row[j] = new Block(scene, x, y, i, j, size, "block");
+        } else {
+          row[j] = new Mine_Block(scene, x, y, i, j, size, "block", "mine");
+        }
+        block_count++;
       }
       this.blocks[i] = row;
     }
-  }
-
-  #get_ran_sel(num_of_mines, field_range) {
-    var arr = [];
-    while (arr.length < num_of_mines) {
-      var r = Math.floor(Math.random() * field_range);
-      if (arr.indexOf(r) === -1) arr.push(r);
-    }
-    return arr;
-  }
-
-  #init_mines() {
-    var mine_pos = this.#get_ran_sel(
-      this.#num_of_mines,
-      this.#rows * this.#cols
-    );
-    for (let i = 0; i < mine_pos.length; i++) {
-      let unseriealized_pos = mine_pos[i];
-      let row = Math.floor(unseriealized_pos / this.#rows);
-      let col = unseriealized_pos % this.#cols;
-      let curr = this.blocks[row][col];
-      this.blocks[row][col] = new Mine_Block(curr, "mine");
+    for (const m of this.#mine_blocks) {
+      let row = Math.floor(m / this.#rows);
+      let col = m % this.#cols;
       this.#inc_mine_counts(row, col);
     }
   }
@@ -139,7 +232,7 @@ class Field extends Phaser.GameObjects.Container {
   }
 
   #on_pointer_up(pointer) {
-    pointer.timer.destroy();
+    pointer.timer.destroy(); // !!!!!! add condition checking if pointer is null
     if (this.pointee.is_uncovered()) return;
     if (this.container.#on_down_pointee !== this.pointee) return;
     this.container.#on_down_pointee = undefined;

@@ -2,16 +2,8 @@ class Mine_Block extends Block {
   #mine_img;
   #mine;
 
-  constructor(parent, img) {
-    super(
-      parent.scene,
-      parent.x,
-      parent.y,
-      parent.posx,
-      parent.posy,
-      parent.width,
-      parent._background_img
-    );
+  constructor(scene, x, y, i, j, size, background_img, img) {
+    super(scene, x, y, i, j, size, background_img);
     this.#mine_img = img;
   }
 
@@ -22,6 +14,7 @@ class Mine_Block extends Block {
   add_item() {
     this.#mine = this.scene.add.sprite(this.x, this.y, this.#mine_img);
     this.#mine.setOrigin(0, 0);
+    //this.#mine.setScale(2);
   }
 
   pointer_del_cover() {
