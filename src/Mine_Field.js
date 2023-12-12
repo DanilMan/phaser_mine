@@ -19,6 +19,8 @@ class Mine_Field extends Phaser.Scene {
   }
 
   create() {
+    this.input.mouse.disableContextMenu();
+
     this.#seconds = 0;
     this.#minutes = 0;
     this.#hours = 0;

@@ -212,13 +212,19 @@ class Field extends Phaser.GameObjects.Container {
 
   #on_pointer_down(pointer) {
     if (this.pointee.is_uncovered()) return;
-    this.container.#on_down_pointee = this.pointee;
-    pointer.timer = this.container.scene.time.delayedCall(
-      this.container.#pointer_flag_time,
-      this.container.#set_block_flag,
-      [pointer],
-      this
-    );
+    if (pointer.rightButtonDown()) {
+      if (!pointer.leftButtonDown()) {
+        this.container.#set_block_flag.call(this, pointer);
+      }
+    } else if (pointer.leftButtonDown() && !pointer.rightButtonDown()) {
+      this.container.#on_down_pointee = this.pointee;
+      pointer.timer = this.container.scene.time.delayedCall(
+        this.container.#pointer_flag_time,
+        this.container.#set_block_flag,
+        [pointer],
+        this
+      );
+    }
   }
 
   #set_block_flag(pointer) {
@@ -232,8 +238,9 @@ class Field extends Phaser.GameObjects.Container {
   }
 
   #on_pointer_up(pointer) {
-    pointer.timer.destroy(); // !!!!!! add condition checking if pointer is null
+    if (pointer.timer !== undefined) pointer.timer.destroy();
     if (this.pointee.is_uncovered()) return;
+    if (pointer.leftButtonDown() || pointer.rightButtonDown()) return;
     if (this.container.#on_down_pointee !== this.pointee) return;
     this.container.#on_down_pointee = undefined;
     if (this.pointee.is_flag_visibile() === false) {
