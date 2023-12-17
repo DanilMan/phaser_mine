@@ -62,6 +62,11 @@ class Block extends Phaser.GameObjects.TileSprite {
     }
   }
 
+  explode() {
+    this._cover.destroy();
+    this._flag.destroy();
+  }
+
   add_flag() {
     this._flag = this.scene.add.sprite(this.x, this.y, "flag");
     this._flag.setOrigin(0, 0);

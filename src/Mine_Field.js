@@ -18,7 +18,7 @@ class Mine_Field extends Phaser.Scene {
     this.load.image("x", "assets/imgs/x.png");
   }
 
-  create() {
+  create(data) {
     this.input.mouse.disableContextMenu();
 
     this.#seconds = 0;
@@ -61,8 +61,14 @@ class Mine_Field extends Phaser.Scene {
       game.scene.stop("playGame");
       game.scene.start("playGame");
     });
-
-    var scene_field = new Field(this, 1, mine_counter);
+    var scene_field;
+    switch (data.game_type) {
+      case "sweeper":
+        scene_field = new Sweeper_Field(this, 1, mine_counter);
+        break;
+      case "detector":
+        scene_field = new Detector_Field(this, 1, mine_counter);
+    }
   }
 
   #set_elapsed_time() {

@@ -1,4 +1,4 @@
-class Field extends Phaser.GameObjects.Container {
+class Detector_Field extends Phaser.GameObjects.Container {
   #num_of_blocks = 0;
   #num_of_mines = 0;
   #mine_counter = 0;
@@ -75,18 +75,6 @@ class Field extends Phaser.GameObjects.Container {
     this.#safe_blocks.sort(function (a, b) {
       return a - b;
     });
-    // for (let i = 0; i < this.#block_pos.length; i++) {
-    //   console.log(i + ": " + this.#block_pos[i]);
-    // }
-    // for (let i = 0; i < adj_blocks.length; i++) {
-    //   console.log(i + ": " + adj_blocks[i]);
-    // }
-    // for (let i = 0; i < this.#safe_blocks.length; i++) {
-    //   console.log(i + ": " + this.#safe_blocks[i]);
-    // }
-    // for (let i = 0; i < this.#mine_blocks.length; i++) {
-    //   console.log(i + ": " + this.#mine_blocks[i]);
-    // }
   }
 
   #fill_array_helper(array) {
@@ -263,8 +251,9 @@ class Field extends Phaser.GameObjects.Container {
 
   #un_cover(pointee) {
     if (pointee.is_mine()) {
-      pointee.pointer_del_cover();
-      this.#game_over();
+      this.#explode_mine(pointee);
+      //pointee.pointer_del_cover();
+      //this.#game_over();
     } else if (pointee.is_far()) {
       //pointee is far block
       this.#delete_covers_dfs(pointee);
@@ -292,6 +281,108 @@ class Field extends Phaser.GameObjects.Container {
     this.#set_mine_flags_vis();
     this.#mine_counter.setText("0");
     this.scene.game_over(1);
+  }
+
+  // Think of ways to refactor this code. It's ugly. maybe another class.
+  // Also need to keep track of flags on field on an array based stack otherwise mine_counter will go negative.
+  #explode_mine(pointee) {
+    if (!pointee.is_uncovered() && !pointee.is_flag_visibile())
+      this.#mine_counter.text--;
+    pointee.explode();
+    let is_top_pointee = pointee.posx - 1 > -1;
+    let is_bot_pointee = pointee.posx + 1 < this.#rows;
+    let is_left_pointee = pointee.posy - 1 > -1;
+    let is_right_pointee = pointee.posy + 1 < this.#cols;
+    let posx = pointee.posx;
+    let posy = pointee.posy;
+    if (is_top_pointee) {
+      if (
+        !this.blocks[posx - 1][posy].is_uncovered() &&
+        this.blocks[posx - 1][posy].is_mine()
+      )
+        this.#explode_mine(this.blocks[posx - 1][posy]); // top center
+      else if (this.blocks[posx - 1][posy].is_flag_visibile()) {
+        this.#mine_counter.text++;
+      }
+      this.blocks[posx - 1][posy].explode();
+      if (is_left_pointee) {
+        if (
+          !this.blocks[posx - 1][posy - 1].is_uncovered() &&
+          this.blocks[posx - 1][posy - 1].is_mine()
+        )
+          this.#explode_mine(this.blocks[posx - 1][posy - 1]); // top left
+        else if (this.blocks[posx - 1][posy - 1].is_flag_visibile()) {
+          this.#mine_counter.text++;
+        }
+        this.blocks[posx - 1][posy - 1].explode();
+      }
+      if (is_right_pointee) {
+        if (
+          !this.blocks[posx - 1][posy + 1].is_uncovered() &&
+          this.blocks[posx - 1][posy + 1].is_mine()
+        )
+          this.#explode_mine(this.blocks[posx - 1][posy + 1]); // top right
+        else if (this.blocks[posx - 1][posy + 1].is_flag_visibile()) {
+          this.#mine_counter.text++;
+        }
+        this.blocks[posx - 1][posy + 1].explode();
+      }
+    }
+    if (is_bot_pointee) {
+      if (
+        !this.blocks[posx + 1][posy].is_uncovered() &&
+        this.blocks[posx + 1][posy].is_mine()
+      )
+        this.#explode_mine(this.blocks[posx + 1][posy]); // bot center
+      else if (this.blocks[posx + 1][posy].is_flag_visibile()) {
+        this.#mine_counter.text++;
+      }
+      this.blocks[posx + 1][posy].explode();
+      if (is_left_pointee) {
+        if (
+          !this.blocks[posx + 1][posy - 1].is_uncovered() &&
+          this.blocks[posx + 1][posy - 1].is_mine()
+        )
+          this.#explode_mine(this.blocks[posx + 1][posy - 1]); // bot left
+        else if (this.blocks[posx + 1][posy - 1].is_flag_visibile()) {
+          this.#mine_counter.text++;
+        }
+        this.blocks[posx + 1][posy - 1].explode();
+      }
+      if (is_right_pointee) {
+        if (
+          !this.blocks[posx + 1][posy + 1].is_uncovered() &&
+          this.blocks[posx + 1][posy + 1].is_mine()
+        )
+          this.#explode_mine(this.blocks[posx + 1][posy + 1]); // bot right
+        else if (this.blocks[posx + 1][posy + 1].is_flag_visibile()) {
+          this.#mine_counter.text++;
+        }
+        this.blocks[posx + 1][posy + 1].explode();
+      }
+    }
+    if (is_left_pointee) {
+      if (
+        !this.blocks[posx][posy - 1].is_uncovered() &&
+        this.blocks[posx][posy - 1].is_mine()
+      )
+        this.#explode_mine(this.blocks[posx][posy - 1]); // left middle
+      else if (this.blocks[posx][posy - 1].is_flag_visibile()) {
+        this.#mine_counter.text++;
+      }
+      this.blocks[posx][posy - 1].explode();
+    }
+    if (is_right_pointee) {
+      if (
+        !this.blocks[posx][posy + 1].is_uncovered() &&
+        this.blocks[posx][posy + 1].is_mine()
+      )
+        this.#explode_mine(this.blocks[posx][posy + 1]); // right middle
+      else if (this.blocks[posx][posy + 1].is_flag_visibile()) {
+        this.#mine_counter.text++;
+      }
+      this.blocks[posx][posy + 1].explode();
+    }
   }
 
   #delete_all_covers() {
