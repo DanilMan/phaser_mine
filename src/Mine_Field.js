@@ -11,14 +11,29 @@ class Mine_Field extends Phaser.Scene {
   }
 
   preload() {
+    // this.loading = this.add.graphics();
+    // this.loading.fillCircle(game.canvas.width/2, game.canvas.height/2, 20);
+    // this.loading.fillStyle(0xffffff,1);
+    // this.loading.depth = 1;
     this.load.image("block", "assets/imgs/block.png");
+    this.load.image("mine", "assets/imgs/mine.png");
     this.load.image("cover", "assets/imgs/cover.png");
     this.load.image("flag", "assets/imgs/flag.png");
-    this.load.image("mine", "assets/imgs/mine.png");
     this.load.image("x", "assets/imgs/x.png");
+    this.load.spritesheet('explosion', 'assets/imgs/explosion_sheet.png', { frameWidth: 50, frameHeight: 50 });
   }
 
   create(data) {
+    this.anims.create({
+      key: 'explode',
+      frames: this.anims.generateFrameNumbers('explosion', {
+        start: 0,
+        end: 8
+      }),
+      repeat: 0,
+      frameRate: 16
+    });
+
     this.input.mouse.disableContextMenu();
 
     this.#seconds = 0;

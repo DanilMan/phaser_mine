@@ -6,6 +6,7 @@ class Block extends Phaser.GameObjects.TileSprite {
   _background_img;
   _cover;
   _flag;
+  #flag_order = 0;
   _x;
 
   constructor(scene, x, y, i, j, size, img) {
@@ -63,8 +64,15 @@ class Block extends Phaser.GameObjects.TileSprite {
   }
 
   explode() {
+    // if (this._flag.scene !== undefined) return; // I don't like the way it looks (only exploding unexploded blocks)
     this._cover.destroy();
     this._flag.destroy();
+    let explode = this.scene.add.sprite(this.x, this.y, "explosion");
+    explode.setOrigin(0, 0);
+    explode.play("explode");
+    explode.once('animationcomplete', () => {
+      explode.destroy();
+    });
   }
 
   add_flag() {
@@ -111,6 +119,14 @@ class Block extends Phaser.GameObjects.TileSprite {
 
   set_flag_visible() {
     // do nothing
+  }
+
+  get_flag_order(){
+    return this.#flag_order;
+  }
+
+  set_flag_order(pos){
+    this.#flag_order = pos;
   }
 
   is_mine() {

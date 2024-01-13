@@ -17,6 +17,7 @@ class Sweeper_Field extends Phaser.GameObjects.Container {
     this.#init_mine_counter(mine_counter);
     this.#init_positions();
     this.#init_field(scene);
+    //scene.loading.destroy();
     this.#add_to_scene();
   }
 

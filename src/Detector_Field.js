@@ -2,6 +2,7 @@ class Detector_Field extends Phaser.GameObjects.Container {
   #num_of_blocks = 0;
   #num_of_mines = 0;
   #mine_counter = 0;
+  #flag_stack = [];
   #rows = 16;
   #cols = 16;
   #pointer_flag_time = 300;
@@ -17,6 +18,7 @@ class Detector_Field extends Phaser.GameObjects.Container {
     this.#init_mine_counter(mine_counter);
     this.#init_positions();
     this.#init_field(scene);
+    // scene.loading.destroy();
     this.#add_to_scene();
   }
 
@@ -221,7 +223,7 @@ class Detector_Field extends Phaser.GameObjects.Container {
       this.container.#mine_counter.text > 0
     );
     if (is_toggle) {
-      this.container.#update_mine_counter(this.pointee.is_flag_visibile());
+      this.container.#update_mine_counter(this.pointee.is_flag_visibile(), this.pointee);
     }
   }
 
@@ -241,12 +243,50 @@ class Detector_Field extends Phaser.GameObjects.Container {
     }
   }
 
-  #update_mine_counter(is_visible) {
+  #push_flag_stack(pointee){
+    this.#flag_stack.push(pointee);
+    pointee.set_flag_order(this.#flag_stack.length - 1);
+  }
+
+  #pop_flag_stack(pointee){
+    let new_pos = pointee.get_flag_order();
+    if (this.#flag_stack.length !== new_pos + 1) {
+      this.#flag_stack[new_pos] = this.#flag_stack.pop();
+      this.#flag_stack[new_pos].set_flag_order(new_pos);
+      pointee.set_flag_order(0);
+    }
+    else {
+      this.#flag_stack.pop();
+      pointee.set_flag_order(0);
+    }
+  }
+
+  #update_mine_counter(is_visible, pointee) {
     if (is_visible) {
       this.#mine_counter.text--;
-    } else {
-      this.#mine_counter.text++;
+      this.#push_flag_stack(pointee);
     }
+    else {
+      this.#mine_counter.text++;
+      this.#pop_flag_stack(pointee);
+    }
+  }
+
+  #dec_exploded_mine_counter(pointee){
+    if(pointee.is_flag_visibile()) {
+      this.#pop_flag_stack(pointee);
+    }
+    else {
+      if (this.#mine_counter.text > 0) {
+        this.#mine_counter.text--;
+      }
+      else {
+        let flagged_block = this.#flag_stack.pop();
+        flagged_block.set_flag_order(0);
+        flagged_block.toggle_flag_visibility(true);
+      }
+    }
+    
   }
 
   #un_cover(pointee) {
@@ -284,10 +324,9 @@ class Detector_Field extends Phaser.GameObjects.Container {
   }
 
   // Think of ways to refactor this code. It's ugly. maybe another class.
-  // Also need to keep track of flags on field on an array based stack otherwise mine_counter will go negative.
   #explode_mine(pointee) {
-    if (!pointee.is_uncovered() && !pointee.is_flag_visibile())
-      this.#mine_counter.text--;
+    if (!pointee.is_uncovered())
+      this.#dec_exploded_mine_counter(pointee);
     pointee.explode();
     let is_top_pointee = pointee.posx - 1 > -1;
     let is_bot_pointee = pointee.posx + 1 < this.#rows;
@@ -301,20 +340,24 @@ class Detector_Field extends Phaser.GameObjects.Container {
         this.blocks[posx - 1][posy].is_mine()
       )
         this.#explode_mine(this.blocks[posx - 1][posy]); // top center
-      else if (this.blocks[posx - 1][posy].is_flag_visibile()) {
-        this.#mine_counter.text++;
+      else{
+        if (this.blocks[posx - 1][posy].is_flag_visibile()) {
+          this.#update_mine_counter(false, this.blocks[posx - 1][posy]);
+        }
+        this.blocks[posx - 1][posy].explode();
       }
-      this.blocks[posx - 1][posy].explode();
       if (is_left_pointee) {
         if (
           !this.blocks[posx - 1][posy - 1].is_uncovered() &&
           this.blocks[posx - 1][posy - 1].is_mine()
         )
           this.#explode_mine(this.blocks[posx - 1][posy - 1]); // top left
-        else if (this.blocks[posx - 1][posy - 1].is_flag_visibile()) {
-          this.#mine_counter.text++;
+        else{
+          if (this.blocks[posx - 1][posy - 1].is_flag_visibile()) {
+            this.#update_mine_counter(false, this.blocks[posx - 1][posy - 1]);
+          }
+          this.blocks[posx - 1][posy - 1].explode();
         }
-        this.blocks[posx - 1][posy - 1].explode();
       }
       if (is_right_pointee) {
         if (
@@ -322,10 +365,13 @@ class Detector_Field extends Phaser.GameObjects.Container {
           this.blocks[posx - 1][posy + 1].is_mine()
         )
           this.#explode_mine(this.blocks[posx - 1][posy + 1]); // top right
-        else if (this.blocks[posx - 1][posy + 1].is_flag_visibile()) {
-          this.#mine_counter.text++;
-        }
-        this.blocks[posx - 1][posy + 1].explode();
+        
+        else{
+          if (this.blocks[posx - 1][posy + 1].is_flag_visibile()) {
+            this.#update_mine_counter(false, this.blocks[posx - 1][posy + 1]);
+          }
+          this.blocks[posx - 1][posy + 1].explode();
+        }  
       }
     }
     if (is_bot_pointee) {
@@ -334,20 +380,24 @@ class Detector_Field extends Phaser.GameObjects.Container {
         this.blocks[posx + 1][posy].is_mine()
       )
         this.#explode_mine(this.blocks[posx + 1][posy]); // bot center
-      else if (this.blocks[posx + 1][posy].is_flag_visibile()) {
-        this.#mine_counter.text++;
-      }
-      this.blocks[posx + 1][posy].explode();
+      else{
+        if (this.blocks[posx + 1][posy].is_flag_visibile()) {
+          this.#update_mine_counter(false, this.blocks[posx + 1][posy]);
+        }
+        this.blocks[posx + 1][posy].explode();
+      }      
       if (is_left_pointee) {
         if (
           !this.blocks[posx + 1][posy - 1].is_uncovered() &&
           this.blocks[posx + 1][posy - 1].is_mine()
         )
           this.#explode_mine(this.blocks[posx + 1][posy - 1]); // bot left
-        else if (this.blocks[posx + 1][posy - 1].is_flag_visibile()) {
-          this.#mine_counter.text++;
+        else{
+          if (this.blocks[posx + 1][posy - 1].is_flag_visibile()) {
+            this.#update_mine_counter(false, this.blocks[posx + 1][posy - 1]);
+          }
+          this.blocks[posx + 1][posy - 1].explode();
         }
-        this.blocks[posx + 1][posy - 1].explode();
       }
       if (is_right_pointee) {
         if (
@@ -355,10 +405,12 @@ class Detector_Field extends Phaser.GameObjects.Container {
           this.blocks[posx + 1][posy + 1].is_mine()
         )
           this.#explode_mine(this.blocks[posx + 1][posy + 1]); // bot right
-        else if (this.blocks[posx + 1][posy + 1].is_flag_visibile()) {
-          this.#mine_counter.text++;
+        else{
+          if (this.blocks[posx + 1][posy + 1].is_flag_visibile()) {
+            this.#update_mine_counter(false, this.blocks[posx + 1][posy + 1]);
+          }
+          this.blocks[posx + 1][posy + 1].explode();
         }
-        this.blocks[posx + 1][posy + 1].explode();
       }
     }
     if (is_left_pointee) {
@@ -367,10 +419,12 @@ class Detector_Field extends Phaser.GameObjects.Container {
         this.blocks[posx][posy - 1].is_mine()
       )
         this.#explode_mine(this.blocks[posx][posy - 1]); // left middle
-      else if (this.blocks[posx][posy - 1].is_flag_visibile()) {
-        this.#mine_counter.text++;
+      else{
+        if (this.blocks[posx][posy - 1].is_flag_visibile()) {
+          this.#update_mine_counter(false, this.blocks[posx][posy - 1]);
+        }
+        this.blocks[posx][posy - 1].explode();
       }
-      this.blocks[posx][posy - 1].explode();
     }
     if (is_right_pointee) {
       if (
@@ -378,10 +432,12 @@ class Detector_Field extends Phaser.GameObjects.Container {
         this.blocks[posx][posy + 1].is_mine()
       )
         this.#explode_mine(this.blocks[posx][posy + 1]); // right middle
-      else if (this.blocks[posx][posy + 1].is_flag_visibile()) {
-        this.#mine_counter.text++;
+      else{
+        if (this.blocks[posx][posy + 1].is_flag_visibile()) {
+          this.#update_mine_counter(false, this.blocks[posx][posy + 1]);
+        }
+        this.blocks[posx][posy + 1].explode();
       }
-      this.blocks[posx][posy + 1].explode();
     }
   }
 
